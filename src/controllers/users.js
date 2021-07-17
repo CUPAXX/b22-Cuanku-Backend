@@ -1,0 +1,148 @@
+const UserModel = require('../models/users')
+const {Op} = require('sequelize')
+const bcrypt = require('bcrypt')
+
+exports.createUser = async (req, res) => {
+  const data = req.body
+  data.pin = await bcrypt.hash(data.pin, await bcrypt.genSalt())
+  const user = await UserModel.create(data)
+  return res.json({
+    success: true,
+    message: 'user has been create',
+    results: user
+  })
+}
+
+exports.updateUser = async (req, res) => {
+  const user = await UserModel.findByPk(req.authUser.id)
+  if(user){
+    if(Object.keys(req.body).includes('pin')){
+      if(req.file){
+        req.body.picture = req.file ? `${process.env.APP_UPLOAD_ROUTE}/${req.file.filename}` : null
+        const data = req.body
+        data.pin = await bcrypt.hash(data.pin, await bcrypt.genSalt())
+        user.set(data)
+        await user.save()
+        return res.json({
+        success: true,
+        message: 'User Update Successfully',
+        results: user
+        })
+      } else {
+        const data = req.body
+        data.pin = await bcrypt.hash(data.pin, await bcrypt.genSalt())
+        user.set(data)
+        await user.save()
+        return res.json({
+        success: true,
+        message: 'User Update Successfully',
+        results: user
+        })
+      }
+      
+    }else {
+      if(req.file){
+        req.body.picture = req.file ? `${process.env.APP_UPLOAD_ROUTE}/${req.file.filename}` : null
+        user.set(req.body)
+        await user.save()
+        return res.json({
+        success: true,
+        message: 'User Update Successfully',
+        results: user
+        })
+      }else {
+        const data = req.body
+        user.set(data)
+        await user.save()
+        return res.json({
+        success: true,
+        message: 'User Update Successfully',
+        results: user
+        })
+      }
+      
+    }
+   
+  } else{
+    return res.status(404).json({
+      success: false,
+      message: 'User Not Found'
+    })
+  }
+}
+
+exports.deleteUser = async (req, res) => {
+  const {id} = req.params
+  const user = await UserModel.findByPk(id)
+  await user.destroy()
+  return res.json({
+    success: true,
+    message: 'User Has Been Deleted',
+    resutls: user
+  })
+}
+
+exports.listUser = async (req, res) => {
+  let {search='', sort, limit=5, page=1} = req.query
+  let order =[]
+  if(typeof sort === 'object'){
+    const key = Object.keys(sort)[0]
+    let value = sort[key]
+    if(value === '1'){
+      value = 'DESC'
+    }else {
+      value = 'ASC'
+    }
+    order.push([key, value])
+  }
+  if(typeof limit === 'string'){
+    limit = parseInt(limit)
+  }
+  if(typeof page === 'string'){
+    page = parseInt(page)
+  }
+  const user = await UserModel.findAll({
+    where: {
+      name: {
+        [Op.substring]: search
+      }
+    },
+    order,
+    limit,
+    offset: (page-1) * limit
+  })
+  const count = await UserModel.count()
+  return res.json({
+    success: true,
+    message: 'List User',
+    results: user,
+    pageInfo: {
+      totalPage: Math.ceil(count/limit),
+      currentPage: page,
+      limitData: limit,
+      nextLink: null,
+      prevLink: null
+    }
+  })
+}
+
+exports.detailUser = async (req, res) => {
+  const {id} = req.params
+  const user = await UserModel.findByPk(id)
+  return res.json({
+    success: true,
+    message: "Detail User",
+    results: user
+  })
+}
+
+exports.topupUser = async (req, res) => {
+  const user = await UserModel.findByPk(req.authUser.id)
+  user.set(req.body)
+  await user.save()
+  return res.json({
+    success: true,
+    message: 'User Update Successfully',
+    results: user
+    })
+}
