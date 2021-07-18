@@ -138,7 +138,7 @@ exports.detailUser = async (req, res) => {
 
 exports.topupUser = async (req, res) => {
   const user = await UserModel.findByPk(req.authUser.id)
-  user.set(req.body)
+  user.increment('balance', {by: req.body.balance})
   await user.save()
   return res.json({
     success: true,
@@ -146,3 +146,7 @@ exports.topupUser = async (req, res) => {
     results: user
     })
 }
+
+// exports.transferToFriend = async (req, res) => {
+
+// }
