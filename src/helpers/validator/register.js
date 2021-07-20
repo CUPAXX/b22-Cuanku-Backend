@@ -11,7 +11,7 @@ module.exports = {
   pin: {
     in: ['body'],
     isLength: {
-      errorMessage: 'password length min & max 6 character',
+      errorMessage: 'Pin length min & max 6 character',
       options: {
         min: 6,
         max: 6

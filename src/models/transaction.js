@@ -6,7 +6,8 @@ const UserModel = require('./users')
 const Transaction = sequelize.define('transaction', {
   userId: Sequelize.INTEGER,
   refNo: Sequelize.STRING,
-  deductedBalance: Sequelize.INTEGER,
+  phoneRecipient: Sequelize.STRING,
+  amount: Sequelize.INTEGER,
   description: Sequelize.STRING,
 
 })

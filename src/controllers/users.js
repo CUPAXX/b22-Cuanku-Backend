@@ -1,6 +1,7 @@
 const UserModel = require('../models/users')
 const {Op} = require('sequelize')
 const bcrypt = require('bcrypt')
+const Transaction = require('../models/transaction')
 
 exports.createUser = async (req, res) => {
   const data = req.body
@@ -14,6 +15,7 @@ exports.createUser = async (req, res) => {
 }
 
 exports.updateUser = async (req, res) => {
+  
   const user = await UserModel.findByPk(req.authUser.id)
   if(user){
     if(Object.keys(req.body).includes('pin')){
@@ -127,8 +129,7 @@ exports.listUser = async (req, res) => {
 }
 
 exports.detailUser = async (req, res) => {
-  const {id} = req.params
-  const user = await UserModel.findByPk(id)
+  const user = await UserModel.findByPk(req.authUser.id)
   return res.json({
     success: true,
     message: "Detail User",
@@ -137,16 +138,87 @@ exports.detailUser = async (req, res) => {
 }
 
 exports.topupUser = async (req, res) => {
+  const date = new Date()
+  const desc = 'Top up balance'
   const user = await UserModel.findByPk(req.authUser.id)
+  if(req.body.balance < 1000){
+    return res.status(500).json({
+      success: false,
+      message: 'Minimum Topup 1000',
+      })
+  }
+  const trx = await Transaction.create({
+    userId: req.authUser.id,
+    refNo: date.getTime(),
+    amount: req.body.balance,
+    description: desc,
+    phoneRecipient: user.phone
+  })
   user.increment('balance', {by: req.body.balance})
+  // user.set({'balance': user.balance - req.body.balance})
   await user.save()
   return res.json({
     success: true,
-    message: 'User Update Successfully',
-    results: user
+    message: 'Topup Successfully',
+    results: trx
     })
 }
 
-// exports.transferToFriend = async (req, res) => {
+exports.createTransfer = async (req,res) => {
+  const date = new Date()
+  const desc = 'Transfer balance'
+  const user = await UserModel.findByPk(req.authUser.id)
+  if(user.balance < req.body.balance){
+    return res.json({
+      success: false,
+      message: `your money is not enough`
+    })
+  }
+  if(req.body.balance < 1000){
+    return res.json({
+      success: false,
+      message: `minimum transfer 1000`,
+    })
+  }
+  const {phoneRecipient} = req.body
+  const anotherUser = await UserModel.findAll({
+    where: {
+      phone: {
+        [Op.substring]: phoneRecipient
+      }
+    }
+  })
+  const trx = await Transaction.create({
+    userId: req.authUser.id,
+    refNo: date.getTime(),
+    amount: req.body.balance,
+    description: desc,
+    phoneRecipient: phoneRecipient
+  })
+  anotherUser[0].increment('balance', {by: req.body.balance})
+  user.decrement('balance', {by: req.body.balance})
+  await user.save()
+  return res.json({
+    success: true,
+    message: 'Transfer successfully',
+    results: trx
+  })
+}
 
-// }
+exports.userPin = async (req, res) => {
+  const { pin} = req.body
+  const user = await UserModel.findByPk(req.authUser.id)
+  const result = user
+  const compare = await bcrypt.compare(pin, result.pin)
+  if(compare){
+    return res.json({
+      success: true,
+      message: 'Pin Match'
+    })
+  } else {
+    return res.status(404).json({
+      success: false,
+      message: 'Your Pin Wrong'
+    })
+  }
+}
