@@ -1,4 +1,5 @@
 const UserModel = require('../models/users')
+const tokenFCM = require('../models/tokenFCM')
 const {Op} = require('sequelize')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
@@ -53,5 +54,28 @@ exports.register = async (req, res) => {
     success: true,
     message: 'user has been create',
     results: user
+  })
+}
+
+exports.registerToken = async (req, res) => {
+  const {token} = req.body;
+  const {id} = req.authUser;
+  const [fcm, created] = await tokenFCM.findOrCreate({
+    where: {
+      token
+    },
+    defaults: {
+      userId: id
+    }
+  })
+
+  if(!created){
+    fcm.userId = id;
+    await fcm.save()
+  }
+
+  return res.json({
+    success: true,
+    message: 'Token saved'
   })
 }

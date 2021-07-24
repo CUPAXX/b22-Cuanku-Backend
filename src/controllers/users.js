@@ -2,6 +2,8 @@ const UserModel = require('../models/users')
 const {Op} = require('sequelize')
 const bcrypt = require('bcrypt')
 const Transaction = require('../models/transaction')
+const TokenFCM = require('../models/tokenFCM')
+const firebase = require('../helpers/firebase')
 
 exports.createUser = async (req, res) => {
   const data = req.body
@@ -181,13 +183,13 @@ exports.createTransfer = async (req,res) => {
     })
   }
   const {phoneRecipient} = req.body
-  const anotherUser = await UserModel.findAll({
+  const anotherUser = await UserModel.findOne({
     where: {
-      phone: {
-        [Op.substring]: phoneRecipient
-      }
-    }
+      phone: phoneRecipient
+    },
+    include: TokenFCM
   })
+  console.log(anotherUser)
   const trx = await Transaction.create({
     userId: req.authUser.id,
     refNo: date.getTime(),
@@ -195,9 +197,19 @@ exports.createTransfer = async (req,res) => {
     description: desc,
     phoneRecipient: phoneRecipient
   })
-  anotherUser[0].increment('balance', {by: req.body.balance})
+  anotherUser.increment('balance', {by: req.body.balance})
   user.decrement('balance', {by: req.body.balance})
   await user.save()
+
+  if(anotherUser.tokenFCM !== null){
+    firebase.messaging().sendToDevice(anotherUser.tokenFCM.token, {
+      notification: {
+        title: 'Transfer CUANKU',
+        body: `${user.name} mengirimkan dana sebesar ${Number(req.body.balance).toLocaleString('en')} melalui aplikasi CUANKU`
+      }
+    })
+  }
+
   return res.json({
     success: true,
     message: 'Transfer successfully',
