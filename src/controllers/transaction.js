@@ -17,13 +17,13 @@ exports.mobileTopup = async (req, res) => {
   const desc = 'Mobile topup'
   const user = await UserModel.findByPk(req.authUser.id)
   if(user.balance < req.body.balance){
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: `your money is not enough`
     })
   }
   if(req.body.balance < 10000){
-    return res.json({
+      return res.status(500).json({
       success: false,
       message: `minimum mobile topup 10000`,
     })

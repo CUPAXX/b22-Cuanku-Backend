@@ -27,7 +27,7 @@ exports.login = async (req, res) => {
     } else {
       return res.status(404).json({
         success: false,
-        message: 'Your Pin Wrong'
+        message: 'Wrong Mobile Number Or PIN'
       })
     }
   } else {

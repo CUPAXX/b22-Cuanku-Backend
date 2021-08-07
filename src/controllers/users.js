@@ -171,13 +171,13 @@ exports.createTransfer = async (req,res) => {
   const desc = 'Transfer balance'
   const user = await UserModel.findByPk(req.authUser.id)
   if(user.balance < req.body.balance){
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: `your money is not enough`
     })
   }
   if(req.body.balance < 1000){
-    return res.json({
+    return res.status(500).json({
       success: false,
       message: `minimum transfer 1000`,
     })
@@ -189,7 +189,12 @@ exports.createTransfer = async (req,res) => {
     },
     include: TokenFCM
   })
-  console.log(anotherUser)
+  if(anotherUser === null || anotherUser === undefined){
+    return res.status(500).json({
+      success: false,
+      message: `Transfer Destination Not Found`,
+    })
+  }
   const trx = await Transaction.create({
     userId: req.authUser.id,
     refNo: date.getTime(),
