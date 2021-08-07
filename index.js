@@ -13,7 +13,7 @@ app.use(express.urlencoded({extended: false}))
 app.use(APP_UPLOAD_ROUTE, express.static(APP_UPLOAD_PATH))
 app.use('/', rootRouter)
 
-app.listen(APP_PORT, () => {
+app.listen(APP_PORT || 8080, () => {
   console.log(`App running on port ${APP_PORT}`)
   sequelize.sync()
 })
