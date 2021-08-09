@@ -111,6 +111,7 @@ exports.listUser = async (req, res) => {
         [Op.substring]: search
       }
     },
+    attributes: {exclude: ['pin']},
     order,
     limit,
     offset: (page-1) * limit
